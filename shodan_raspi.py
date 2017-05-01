@@ -74,7 +74,11 @@ while (True):
                         print '%3d : %7s : %5s'%(i,server,'Authentication Failed!')
                         i=i+1
                         f.close()                
-                except socket.error:
+                except paramiko.ssh_exception.NoValidConnectionsError:
+                        print '%3d : %7s : %5s'%(i,server,'Connection Failed!')
+                        i=i+1
+                        f.close()
+                except paramiko.ssh_exception.SSHException:
                         print '%3d : %7s : %5s'%(i,server,'Connection Failed!')
                         i=i+1
                         f.close()

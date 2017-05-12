@@ -65,7 +65,7 @@ while (True):
                         print '%3d : %7s : %5s'%(i,server,'Success!')
                         success=success+1
                         with open('success_ip.txt','a+') as fl:
-                                fl.write(server)
+                                fl.write(server+'\n')
                                 fl.close()
                         f.close()
                         ssh.close()

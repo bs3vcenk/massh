@@ -1,28 +1,23 @@
-# Shodan_Raspi
-###### ***Hack Raspberry Pi(s) across the world !***  
-   
-   
-This script basically uses `shodan` api to search Raspberry Pi's ip addresses , and tries to `ssh` into them by using the default username: ***pi*** and password: ***raspberrry***, then stores the successful ip addresses into a  text file.  
+# Shodan-RPi
+  
+This script uses the Shodan API to search for Raspbian devices running an SSH server, and tries to SSH into them by using the default credentials `pi:raspberry`.
 
 ## Requirements:
 ###### Python Modules:
-1. Paramiko (~$easy_install paramiko)  
-2. Shodan (~$easy_install shodan)  
+* `paramiko` (the SSH client)  
+* `shodan` (the API client)
+* `colorama` (the colored output module)
 
-Or, Simply run --  
-```
-$ pip install -r requirements.txt
-```
-###### >> Setup your `Shodan` api key in the script << 
+...which can be installed by running `pip install -r requirements.txt` on Linux and `python -m pip install -r requirements.txt` on Windows.
 
 ## Usage:  
 ```
-$ python shodan_raspi.py  
+$ python shodan_raspi.py -k <API_KEY>
 ```
-###### OR
-```
-$ python shodan_raspi.py -i source_file_name  
-``` 
-If the source file doesn't exist , it'll be created, using `Shodan` api.  
-The Source File consists of ip address, only one per line.  
+By default, the script will poll Shodan for results and write the IPs into a list, trying them until it reaches the end.
 
+Providing a file with the `-i` argument will read the file into a list, and do the same.
+
+The `-n` argument will repeat the above process until Ctrl+C is pressed.
+
+Arguments `-u` and `-p` can be used to change the default username and password to something else.

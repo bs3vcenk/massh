@@ -50,6 +50,8 @@ def fileExists():
 	"""
 		Check if the file provided using the -i/--input argument exists
 	"""
+	if args.input == None:
+		return False
 	if os.path.isfile(args.input) == False or os.path.getsize(args.input) == 0:
 		return False
 	else:
@@ -72,6 +74,7 @@ def getShodanResults(apikey, searchstring='Raspbian SSH'):
 	"""
 		Poll Shodan for results
 	"""
+	print('[*] Getting results from Shodan; this may take a while...')
 	api = shodan.Shodan(apikey)
 	try:
 		results = api.search(searchstring)
@@ -87,7 +90,7 @@ def fileGet(shodandata=None):
 	if args.input == None:
 		print('[-] fileGet() was called, but a file wasn\'t provided!\n    If this happened on the production version, please create an issue on GitHub.')
 		sys.exit(1)
-	if fileExists() == False:
+	if fileExists() == False and shodandata != None:
 		print('[!] %s doesn\'t exist, creating new file with Shodan results...' % args.input)
 		try:
 			with open(args.input, 'w') as m:
@@ -106,7 +109,7 @@ def apikey():
 		Get the API key
 	"""
 	if args.api_key == None:
-		print('[-] No API key provided. Either use the -k/--api-key argument\n    or edit the script.')
+		print('[-] No API key provided. Either use the -k/--api-key\n    argument or edit the script.')
 		sys.exit(1)
 	else:
 		return args.api_key
@@ -138,23 +141,37 @@ def connect(server, username, password):
 def main():
 	counter = 0
 	success = 0
-	if args.input == None:
-		targets = arrayWrite(shodandata=getShodanResults(key)) # In-memory
+	if fileExists() == False:
+		shres = getShodanResults(key)
 	else:
-		targets = fileGet(shodandata=getShodanResults(key)) # From file
+		shres = None
+	if args.input == None:
+		targets = arrayWrite(shodandata=shres) # In-memory
+	else:
+		targets = fileGet(shodandata=shres) # From file
 	try:
 		for ip in targets:
 			counter += 1
 			print('[%s] Trying %s... ' % (counter, ip), end='')
 			r = connect(ip, args.username, args.password)
-			# if r == 'auth_fail':
-			# 	print('Authentication failure.')
-			# elif r == 'conn_fail':
-			# 	print('Connection failure.')
-			# elif r == 'conn_timeout':
-			# 	print('Connection timed out.')
-			if r == 'auth_fail' or r == 'conn_fail' or r == 'conn_timeout':
-				print(failtext)
+			if r == 'auth_fail':
+				if args.debug:
+					reason = ' [AUTHENT]'
+				else:
+					reason = ''
+				print(failtext + reason)
+			elif r == 'conn_fail':
+				if args.debug:
+					reason = ' [GENERAL]'
+				else:
+					reason = ''
+				print(failtext + reason)
+			elif r == 'conn_timeout':
+				if args.debug:
+					reason = ' [TIMEOUT]'
+				else:
+					reason = ''
+				print(failtext + reason)
 			elif r == 'success':
 				success += 1
 				print(succtext)
@@ -169,9 +186,9 @@ def main():
 if __name__ == "__main__":
 	print('[i] Shodan-RPi\n    by b3/btx3 (original code by somu1795)')
 	if args.input != None:
-		print('[i] Set target file to %s\n' % args.input)
+		print('\n[i] Set target file to %s\n' % args.input)
 	else:
-		print('[i] Not writing to file.\n')
+		print('\n[i] Not writing to file.\n')
 	key = apikey()
 	ssh = paramiko.SSHClient()
 	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy()) # Revert to AutoAddPolicy, as otherwise you would get lots of errors
@@ -183,5 +200,6 @@ if __name__ == "__main__":
 			main()
 	elif args.no_exit and args.input:
 		print('[-] -n/--no-exit is not available when reading from a file.')
+		sys.exit(1)
 	else:
 		main()

@@ -6,6 +6,9 @@ api_key = None # Set to None if you want to provide a key through arguments
 
 init() # Colored output
 
+ssh = paramiko.SSHClient()
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy()) # Revert to AutoAddPolicy, as otherwise you would get lots of errors
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--input',
                     help='List of IPs',
@@ -23,8 +26,7 @@ parser.add_argument('-k', '--api-key',
 parser.add_argument('-l', '--log-paramiko',
                     help='Log Paramiko SSH\'s progress to FILE',
                     metavar='FILE',
-                    type=str,
-                    default='paramiko.log') # Paramiko (the SSH client)'s log file location
+                    type=str) # Paramiko (the SSH client)'s log file location
 parser.add_argument('-w', '--workfile',
                     help='Output successful IPs to FILE',
                     metavar='FILE',
@@ -41,6 +43,11 @@ parser.add_argument('-p', '--password',
 parser.add_argument('-d', '--debug',
                     help='Show debug information',
                     action='store_true')
+parser.add_argument('-s', '--search-string',
+                    help='Use SSTRING as the Shodan query string',
+                    metavar='SSTRING',
+                    type=str,
+                    default='Raspbian SSH')
 args = parser.parse_args()
 
 failtext = Fore.RED + '\tFAILED' + Fore.RESET
@@ -70,7 +77,7 @@ def arrayWrite(shodandata=None):
 		r.append(a['ip_str'])
 	return r
 
-def getShodanResults(apikey, searchstring='Raspbian SSH'):
+def getShodanResults(apikey, searchstring=args.search_string):
 	"""
 		Poll Shodan for results
 	"""
@@ -189,10 +196,10 @@ if __name__ == "__main__":
 		print('\n[i] Set target file to %s\n' % args.input)
 	else:
 		print('\n[i] Not writing to file.\n')
-	key = apikey()
-	ssh = paramiko.SSHClient()
-	ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy()) # Revert to AutoAddPolicy, as otherwise you would get lots of errors
-	paramiko.util.log_to_file(args.log_paramiko)
+	if fileExists() == False:
+		key = apikey()
+	if args.log_paramiko:
+		paramiko.util.log_to_file(args.log_paramiko)
 	print('[+] Starting!')
 	if args.no_exit and not args.input:
 		print('[!] Running indefinitely! Press Ctrl+C to stop.')

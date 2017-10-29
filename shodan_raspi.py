@@ -107,6 +107,8 @@ def fileGet(shodandata=None):
 			print('[-] Storage Write Error\n    Error string: %s\n\n    Please check that the directory you\'re in is writable.' % str(e))
 			sys.exit(1)
 		print('[+] Write to %s complete!' % args.input)
+		g = open(args.input, 'r').readlines()
+		return map(lambda g: g.strip(), g)
 	else:
 		g = open(args.input, 'r').readlines()
 		return map(lambda g: g.strip(), g)

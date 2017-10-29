@@ -24,3 +24,8 @@ The `-n` argument will keep retrying once it finishes the list.
 Arguments `-u` and `-p` can be used to change the default username and password to something else.
 
 `-d` will show the reason for a failed connection.
+
+## Example
+[![ASCIInema recording](https://asciinema.org/a/RE6ze9T70wtJxL5IFmo7KFowW.png)](https://asciinema.org/a/RE6ze9T70wtJxL5IFmo7KFowW)
+
+(The sequence above doesn't include the process of getting results from Shodan, which may take a while, but instead reads from a pre-generated list of IPs to make the recording shorter.)

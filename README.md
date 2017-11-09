@@ -17,13 +17,25 @@ Additionally, the script can be edited (specifically the variable `api_key`) to 
 
 By default, the script will poll Shodan for results and write the IPs into a list, trying them until it reaches the end.
 
-Providing a file with the `-i` argument will read the file into a list, and do the same.
+`-i FILE` or `--input FILE` will do the same, but instead using FILE as the source. If FILE doesn't exist, it will be created.
 
-The `-n` argument will keep retrying once it finishes the list.
+`-n` or `--no-exit` will keep polling Shodan for results and retrying.
 
-Arguments `-u` and `-p` can be used to change the default username and password to something else.
+`-u USER` or `--username USER` and `-p PASS` or `--password PASS` will change the default credentials.
 
-`-d` will show the reason for a failed connection.
+`-s SSTRING` or `--search-string SSTRING` will user SSTRING as the Shodan search string.
+
+`-w FILE` or `--workfile FILE` will write all successful IPs to FILE. By default this is `successful.txt`.
+
+`-l FILE` or `--log-paramiko FILE` will write `paramiko`'s log to FILE.
+
+`-d` or `--debug` will show the reason for a failed connection.
+
+## Bugs
+
+Running with `-n`/`--no-exit` resets the successful and total tries counters on every try.
+
+`-n`/`--no-exit` doesn't yet work on text files.
 
 ## Example
 [![ASCIInema recording](https://asciinema.org/a/RE6ze9T70wtJxL5IFmo7KFowW.png)](https://asciinema.org/a/RE6ze9T70wtJxL5IFmo7KFowW)

@@ -158,6 +158,7 @@ def main():
 		targets = arrayWrite(shodandata=shres) # In-memory
 	else:
 		targets = fileGet(shodandata=shres) # From file
+	print('[i] %s found\n' % (str(len(targets)) + ' target' if len(targets) < 2 else str(len(targets)) + ' targets'))
 	try:
 		for ip in targets:
 			counter += 1
@@ -193,16 +194,15 @@ def main():
 		sys.exit(0)
 
 if __name__ == "__main__":
-	print('[i] Shodan-RPi\n    by b3/btx3 (original code by somu1795)')
+	print('[i] Shodan-RPi\n    by btx3 (based on code by somu1795)')
 	if args.input != None:
-		print('\n[i] Set target file to %s\n' % args.input)
+		print('\n[i] Reading from %s' % args.input)
 	else:
-		print('\n[i] Not writing to file.\n')
+		print('\n[i] Running from in-memory data')
 	if fileExists() == False:
 		key = apikey()
 	if args.log_paramiko:
 		paramiko.util.log_to_file(args.log_paramiko)
-	print('[+] Starting!')
 	if args.no_exit and not args.input:
 		print('[!] Running indefinitely! Press Ctrl+C to stop.')
 		while True:

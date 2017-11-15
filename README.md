@@ -9,7 +9,7 @@ This branch of Shodan-RPi has been ported over to Python 3 as my ongoing project
 * `shodan` (the API client)
 * `colorama` (the colored output module)
 
-...which can be installed by running `pip install -r requirements.txt` on Linux and `python -m pip install -r requirements.txt` on Windows.
+...which can be installed by running `pip3 install -r requirements.txt` on Linux and `python3 -m pip install -r requirements.txt` on Windows.
 
 ## Usage
 ```

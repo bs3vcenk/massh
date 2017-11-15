@@ -1,6 +1,8 @@
-# Shodan-RPi
+# Shodan-RPi [Python 3]
 
 This script uses the Shodan API to search for Raspbian devices running an SSH server, and tries to SSH into them by using the default credentials `pi:raspberry`.
+
+This branch of Shodan-RPi has been ported over to Python 3 as my ongoing project to switch over to Python 3.
 
 ## Requirements
 * `paramiko` (the SSH client)  

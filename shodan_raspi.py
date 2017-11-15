@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from __future__ import print_function
 from colorama import Fore, init
 import argparse, os, socket, sys, paramiko, shodan
@@ -86,7 +88,7 @@ def getShodanResults(apikey, searchstring=args.search_string):
 	try:
 		results = api.search(searchstring)
 		return results
-	except shodan.APIError, e:
+	except shodan.APIError as e:
 		print('[-] Shodan API Error\n    Error string: %s\n\n    Please check the provided API key.' % str(e))
 		sys.exit(1)
 
@@ -103,7 +105,7 @@ def fileGet(shodandata=None):
 			with open(args.input, 'w') as m:
 				for a in shodandata['matches']:
 					m.write(a['ip_str']+'\n')
-		except IOError, e:
+		except IOError as e:
 			print('[-] Storage Write Error\n    Error string: %s\n\n    Please check that the directory you\'re in is writable.' % str(e))
 			sys.exit(1)
 		print('[+] Write to %s complete!' % args.input)

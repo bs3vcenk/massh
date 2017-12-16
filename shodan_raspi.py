@@ -129,7 +129,7 @@ def connect(server, username, password):
 	"""
 	try:
 		ssh.connect(server, username=username, password=password, timeout=5) # Lowered timeout from 8 to 5
-		with open(args.workfile, 'w+') as fl:
+		with open(args.workfile, 'a') as fl:
 			fl.write(server+'\n')
 			fl.close()
 		ssh.close()

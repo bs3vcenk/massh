@@ -70,9 +70,6 @@ parser.add_argument('-c', '--command',
                     help='Run CMD after a successful connection',
                     metavar='CMD',
                     type=str) # For example, run uname -a or lscpu
-parser.add_argument('--enum',
-                    help='Enumerate system specs',
-                    action='store_true') # GPUs/CPUs/RAM...
 args = parser.parse_args()
 
 failtext = Fore.RED + '\tFAILED' + Fore.RESET
@@ -236,13 +233,7 @@ if __name__ == "__main__":
 		key = apikey()
 	if args.log_paramiko:
 		paramiko.util.log_to_file(args.log_paramiko)
-	if args.enum and args.command:
-		print('[-] Can\'t use --enum and --command together!')
 		sys.exit(1)
-	if args.enum:
-		# Enumeration command (CPUs, L3, GPUs)
-		# It will print an empty string in there's no L3, TODO
-		args.command = "bash -c \"echo '$(nproc) CPUs | $(lscpu | awk \'/L3 cache:/{print $3}\' || echo NO) L3 | $(lspci | grep -e \'NVIDIA\' -e \'AMD\' | wc -l || echo NO) GPU(s)'\""
 	if args.no_exit and not args.input:
 		print('[!] Running indefinitely! Press Ctrl+C to stop.')
 		while True:

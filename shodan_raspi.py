@@ -16,7 +16,7 @@ except ModuleNotFoundError:
 	sys.exit(1)
 
 api_key = None # Set to None if you want to provide a key through arguments
-version = "1.0.0/py3-devtest"
+version = "1.0.0/py3"
 
 init() # Colored output
 

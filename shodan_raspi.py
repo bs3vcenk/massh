@@ -155,12 +155,13 @@ def connect(server, username, password=None, key=None, cmd=None):
 		elif key != None:
 			ssh.connect(server, username=username, key_filename=key, timeout=5)
 		with open(args.workfile, 'a') as fl:
-			fl.write(server+'\n')
-			fl.close()
-		if args.command:
-			si, so, se = ssh.exec_command(cmd)
-			time.sleep(1)
-			si.close()
+			fl.write(server)
+			if args.command:
+				si, so, se = ssh.exec_command(cmd)
+				time.sleep(1)
+				si.close()
+				fl.write(' | %s' % so.readlines())
+			fl.write('\n')
 		ssh.close()
 		if args.command:
 			return so.readlines()
@@ -195,7 +196,6 @@ def main():
 		for ip in targets:
 			counter += 1
 			print('[%s] %s ' % (counter, ip), end='')
-#			if args.
 			r = connect(ip, args.username, password=args.password, key=args.ssh_key, cmd=args.command)
 			if r == 1:
 				reason = ' [AUTHENT]' if args.debug else ''

@@ -4,7 +4,7 @@ import argparse, os, socket, sys, time
 try:
 	from colorama import Fore, init
 	import paramiko, shodan
-except ModuleNotFoundError:
+except ImportError:
 	print('[-] Failed to import an external module.')
 	import platform
 	if platform.system() == 'Linux':

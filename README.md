@@ -11,45 +11,36 @@ This script uses the Shodan API to search for Raspbian devices running an SSH se
 
 ## Usage
 ```
-usage: shodan_raspi.py [-h] [-i FILE] [-n] [-k KEY] [-l FILE] [-w FILE]
-                       [-u USERNAME] [-p PASSWORD] [-d] [-s SSTRING] [-sk KEY]
-                       [-c CMD] [--enum]
+usage: shodan_raspi.py [-h] [-i FILE] [--indefinite] [-k KEY]
+                       [--paramiko-log FILE] [-w FILE] [-u U] [-p P] [--debug]
+                       [--query-string SSTRING] [--ssh-key KEY] [-c CMD]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -i FILE, --input FILE
-                        List of IPs
-  -n, --no-exit         Run indefinitely, restarting once the scan is finished
-  -k KEY, --api-key KEY
-                        Use KEY as the Shodan API key
-  -l FILE, --log-paramiko FILE
-                        Log Paramiko SSH's progress to FILE
-  -w FILE, --workfile FILE
-                        Output successful IPs to FILE
-  -u USERNAME, --username USERNAME
-                        Use alternate username
-  -p PASSWORD, --password PASSWORD
-                        Use alternate password
-  -d, --debug           Show debug information
-  -s SSTRING, --search-string SSTRING
+  -i FILE               List of IPs
+  --indefinite          Run indefinitely, restarting once the scan is finished
+  -k KEY                Use KEY as the Shodan API key
+  --paramiko-log FILE   Log Paramiko SSH's progress to FILE
+  -w FILE               Output successful IPs to FILE
+  -u U                  Use alternate username
+  -p P                  Use alternate password
+  --debug               Show debug information
+  --query-string SSTRING
                         Use SSTRING as the Shodan query string
-  -sk KEY, --ssh-key KEY
-                        Try auth with KEY as SSH key
-  -c CMD, --command CMD
-                        Run CMD after a successful connection
-  --enum                Enumerate system specs
+  --ssh-key KEY         Try auth with KEY as SSH key
+  -c CMD                Run CMD after a successful connection
 ```
 
-Additionally, the script can be edited (specifically the variable `api_key`) to not require an API key argument.
+Additionally, the script can be edited (specifically the variable `api_key`) to not require an API key in the arguments.
 
 By default, the script will poll Shodan for results and write the IPs into a list, trying them until it reaches the end.
 ## Bugs
 
-Running with `-n`/`--no-exit` resets the successful and total tries counters on every try.
+Running with `--indefinite` resets the successful and total tries counters on every loop.
 
-`--enum` will print out an empty character if there's no L3 cache (`[1] 192.168.178.42      4 CPUs |  L3 | 0 GPU(s)`)
+Sometimes, even if authentication is successful, command execution will not work on some devices - for example Cisco gear - due to the way shells are implemented in these systems.
 
 ## Example
-[![ASCIInema recording](https://asciinema.org/a/RE6ze9T70wtJxL5IFmo7KFowW.png)](https://asciinema.org/a/RE6ze9T70wtJxL5IFmo7KFowW)
+[![asciicast](https://asciinema.org/a/IiwLQtHtnPhIWGcElwHbx5vEU.png)](https://asciinema.org/a/IiwLQtHtnPhIWGcElwHbx5vEU)
 
 (The sequence above doesn't include the process of getting results from Shodan, which may take a while, but instead reads from a pre-generated list of IPs to make the recording shorter.)

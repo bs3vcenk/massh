@@ -29,6 +29,8 @@ optional arguments:
                         Use SSTRING as the Shodan query string
   --ssh-key KEY         Try auth with KEY as SSH key
   -c CMD                Run CMD after a successful connection
+  --limit RESULTS       Maximum number of results to get from Shodan (default
+                        100)
 ```
 
 Additionally, the script can be edited (specifically the variable `api_key`) to not require an API key in the arguments.

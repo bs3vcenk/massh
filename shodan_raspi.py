@@ -71,6 +71,11 @@ parser.add_argument('-c',
                     help='Run CMD after a successful connection',
                     metavar='CMD',
                     type=str) # For example, run uname -a or lscpu
+parser.add_argument('--limit'
+		    help='Maximum number of results to get from Shodan (default 100)',
+		    metavar='RESULTS',
+		    type=str,
+		    default=100)
 args = parser.parse_args()
 
 failtext = Fore.RED + '\tFAILED' + Fore.RESET
@@ -97,14 +102,14 @@ def arrayWrite(shodandata=None):
 		r.append(a['ip_str'])
 	return r
 
-def getShodanResults(apikey, searchstring=args.query_string):
+def getShodanResults(apikey, searchstring=args.query_string, limit=args.limit):
 	"""
 		Poll Shodan for results
 	"""
 	print(Fore.CYAN + '[*]' + Fore.RESET + ' Getting results from Shodan; this may take a while...')
 	api = shodan.Shodan(apikey)
 	try:
-		results = api.search(searchstring)
+		results = api.search(searchstring, limit=limit)
 		return results
 	except shodan.APIError as e:
 		print((Fore.RED + '[-]' + Fore.RESET + ' Shodan API Error\n    Error string: %s\n\n    Please check the provided API key.' % str(e)))

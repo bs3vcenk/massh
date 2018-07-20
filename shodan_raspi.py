@@ -71,7 +71,7 @@ parser.add_argument('-c',
                     help='Run CMD after a successful connection',
                     metavar='CMD',
                     type=str) # For example, run uname -a or lscpu
-parser.add_argument('--limit'
+parser.add_argument('--limit',
 		    help='Maximum number of results to get from Shodan (default 100)',
 		    metavar='RESULTS',
 		    type=str,

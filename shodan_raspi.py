@@ -189,7 +189,7 @@ def check(ip):
 	"""
 		Single-threaded check function - most stable
 	"""
-	counter += 1
+#	counter += 1
 	print('[%s] %s ' % (counter, ip), end='')
 	r = connect(ip, args.u, password=args.p, key=args.ssh_key, cmd=args.c)
 	if r == 1:
@@ -207,7 +207,7 @@ def check(ip):
 	elif r == 9:
 		raise KeyboardInterrupt
 	else:
-		success += 1
+#		success += 1
 		if not args.c:
 			print(succtext)
 		else:

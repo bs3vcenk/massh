@@ -5,8 +5,8 @@ from multiprocessing import Pool
 try:
 	from colorama import Fore, init
 	import paramiko, shodan
-except ModuleNotFoundError as e:
-	print('[-] Failed to import an external module. (%s)' % (e))
+except ImportError:
+	print('[-] Failed to import an external module.')
 	import platform
 	if platform.system() == 'Linux':
 		print('    Run "pip install -r requirements.txt".')

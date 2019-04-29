@@ -21,13 +21,12 @@ usage: shodan_raspi.py [-h] [-i FILE] [-indefinite] [-k KEY]
 optional arguments:
   -h, --help            show this help message and exit
   -i FILE               List of IPs
-  -indefinite           Run indefinitely, restarting once the scan is finished
   -k KEY                Use KEY as the Shodan API key
   -paramiko-log FILE    Log Paramiko SSH's progress to FILE
   -o FILE               Output successful IPs to FILE
-  -u U                  Use alternate username
-  -p P                  Use alternate password
-  -t T                  Threads for multiprocessing
+  -u USER               Use alternate username
+  -p PASS               Use alternate password
+  -t THREADS            Threads for multiprocessing
   -debug                Show debug information
   -query-string SSTRING
                         Use SSTRING as the Shodan query string
@@ -35,7 +34,12 @@ optional arguments:
   -c CMD                Run CMD after a successful connection
   -limit RESULTS        Maximum number of results to get from Shodan (default
                         100)
-  -enable-multiproc     Enable multiprocessing support (ALPHA/UNSTABLE)
+  -disable-multiproc    Disable multiprocessing support (slower, more complete output)
+```
+
+So, for example, scan Shodan for OpenSSH servers, and try to connect using the the username `root` and password `123456`
+```
+./shodan_raspi.py -k SHODAN_KEY -query-string "OpenSSH" -u root -p 123456
 ```
 
 Additionally, the script can be edited (specifically the variable `api_key`) to not require an API key in the arguments.
@@ -43,17 +47,8 @@ Additionally, the script can be edited (specifically the variable `api_key`) to 
 By default, the script will poll Shodan for results and write the IPs into a list, trying them until it reaches the end.
 ## Bugs
 
-GENERAL: Running with `-indefinite` resets the successful and total tries counters on every loop.
-
-MULTIPROCESSING: No counters are updated in multiprocessing mode
-
-MULTIPROCESSING: Multiprocessing will not work in some environments like Termux (`This platform lacks a functioning sem_open implementation.`)
+MULTIPROCESSING: Multiprocessing will not work in some environments like Termux (`This platform lacks a functioning sem_open implementation.`). In case this happens, append `-disable-multiproc` to the command line.
 
 MULTIPROCESSING: Incomplete error handling
 
 GENERAL: Sometimes, even if authentication is successful, command execution will not work on some devices - for example Cisco gear - due to the way shells are implemented in these systems.
-
-## Example
-[![asciicast](https://asciinema.org/a/IiwLQtHtnPhIWGcElwHbx5vEU.png)](https://asciinema.org/a/IiwLQtHtnPhIWGcElwHbx5vEU)
-
-(The sequence above doesn't include the process of getting results from Shodan, which may take a while, but instead reads from a pre-generated list of IPs to make the recording shorter.)

@@ -23,7 +23,7 @@ version = "1.1.0"
 init() # Colored output
 
 ssh = paramiko.SSHClient()
-ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy()) # Revert to AutoAddPolicy, as otherwise you would get lots of errors
+ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i',
@@ -31,9 +31,6 @@ parser.add_argument('-i',
 					metavar='FILE',
 					type=str,
 					default=None) # Input file argument, by default it writes to memory (list/array)
-parser.add_argument('-indefinite',
-					help='Run indefinitely, restarting once the scan is finished',
-					action='store_true') # Don't exit on completion, but instead poll Shodan again
 parser.add_argument('-k',
 					help='Use KEY as the Shodan API key',
 					metavar='KEY',
@@ -50,14 +47,17 @@ parser.add_argument('-o',
 					default='successful.txt') # Where to output successful IPs
 parser.add_argument('-u',
 					help='Use alternate username',
+					metavar='USER',
 					type=str,
 					default='pi') # For alternate usernames
 parser.add_argument('-p',
 					help='Use alternate password',
+					metavar='PASS',
 					type=str,
 					default='raspberry') # For alternate passwords
 parser.add_argument('-t',
 					help='Threads for multiprocessing',
+					metavar='THREADS',
 					type=int,
 					default=8)
 parser.add_argument('-debug',
@@ -81,8 +81,8 @@ parser.add_argument('-limit',
 					metavar='RESULTS',
 					type=str,
 					default=100)
-parser.add_argument('-enable-multiproc',
-					help='Enable multiprocessing support (ALPHA/UNSTABLE)',
+parser.add_argument('-disable-multiproc',
+					help='Disable multiprocessing support (slower, more complete output)',
 					action='store_true')
 args = parser.parse_args()
 
@@ -230,8 +230,16 @@ def check_multi(ip):
 			print('%s -- NO OUTPUT' % ip)
 
 def main():
-	global counter
-	global success
+	print(Fore.BLUE + '[i]' + Fore.RESET + ' Shodan-RPi %s\n    by btx3 (based on code by somu1795)' % version)
+	if not fileCorrect():
+		key = apikey()
+	if args.i != None:
+		print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from %s' % args.i))
+	else:
+		print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from %s' % ("SHODAN:" + key if args.debug else "Shodan results")))
+	if args.paramiko_log:
+		# Start logging
+		paramiko.util.log_to_file(args.paramiko_log)
 	counter = 0
 	success = 0
 	if not fileCorrect():
@@ -244,7 +252,7 @@ def main():
 		targets = fileGet(shodandata=shres) # From file
 	print((Fore.BLUE + '[i]' + Fore.RESET + ' %s found\n' % (str(len(targets)) + ' target' if len(targets) < 2 else str(len(targets)) + ' targets')))
 	try:
-		if not args.enable_multiproc:
+		if args.disable_multiproc:
 			for ip in targets:
 				check(ip)
 		else:
@@ -259,30 +267,4 @@ def main():
 		sys.exit(0)
 
 if __name__ == "__main__":
-	print(Fore.BLUE + '[i]' + Fore.RESET + ' Shodan-RPi %s\n    by btx3 (based on code by somu1795)' % version)
-	if not fileCorrect():
-		key = apikey()
-	if args.i != None:
-		if args.debug:
-			print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from FILE:%s' % args.i))
-		else:
-			print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from %s' % args.i))
-	else:
-		if args.debug:
-			print(('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Reading from SHODAN:%s' % key))
-		else:
-			print('\n' + Fore.BLUE + '[i]' + Fore.RESET + ' Running with temporary results')
-	if args.enable_multiproc:
-		print(Fore.YELLOW + '[!]' + Fore.RESET + ' Multiprocessing mode enabled! It is NOT stable and may crap out at any moment!')
-	if args.paramiko_log:
-		# Start logging
-		paramiko.util.log_to_file(args.paramiko_log)
-	if args.indefinite and not args.i:
-		print(Fore.YELLOW + '[!]' + Fore.RESET + ' Running indefinitely! Press Ctrl+C to stop.')
-		while True:
-			main()
-	elif args.indefinite and args.i:
-		print(Fore.RED + '[-]' + Fore.RESET+ ' -indefinite is not available when reading from a file.')
-		sys.exit(1)
-	else:
-		main()
+	main()

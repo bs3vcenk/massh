@@ -100,6 +100,12 @@ def fileCorrect():
 	except:
 		return False
 
+def mapCodeToString(code):
+	"""
+		Map the integer returned by connect() to a debug-friendly string
+	"""
+	return ["ERR_AUTH", "ERR_CONNECTION", "ERR_TIMEOUT", "ERR_SSH", "ERR_UNKNOWN", None, None, None, "ERR_KEYBOARD_INTERRUPT"][code]
+
 def arrayWrite(shodandata=None):
 	"""
 		Parse the IPs in shodandata and write them to an array/list
@@ -114,7 +120,7 @@ def getShodanResults(apikey, searchstring=args.query_string, limit=args.limit):
 	"""
 		Poll Shodan for results
 	"""
-	print(Fore.CYAN + '[*]' + Fore.RESET + ' Getting results from Shodan; this may take a while...')
+	print(Fore.CYAN + '[*]' + Fore.RESET + ' Getting results from Shodan...')
 	api = shodan.Shodan(apikey)
 	try:
 		results = api.search(searchstring, limit=limit)
@@ -172,7 +178,7 @@ def connect(server, username, password=None, key=None, cmd=None):
 			return so.readlines()
 		else:
 			return 0 # Success
-	except paramiko.AuthenticationException as g:
+	except paramiko.AuthenticationException:
 		return 1 # Authentication error
 	except paramiko.ssh_exception.NoValidConnectionsError:
 		return 2 # Connection error
@@ -223,11 +229,16 @@ def check_multi(ip):
 	if args.debug:
 		print("[D] Multiproc - check IP %s" % ip)
 	r = connect(ip, args.u, password=args.p, key=args.ssh_key, cmd=args.c)
-	if args.c:
-		try:
-			print('%s -- %s' % (ip, r[0].replace('\n', '')))
-		except IndexError:
-			print('%s -- NO OUTPUT' % ip)
+	if r == 0:
+		if args.c:
+			try:
+				print('%s -- %s' % (ip, r[0].replace('\n', '')))
+			except IndexError:
+				print('%s -- NO OUTPUT' % ip)
+		print(Fore.GREEN + "[+]" + Fore.RESET + " %s SUCCEEDED" % ip)
+	else:
+		if args.debug:
+			print(Fore.RED + "[-]" + Fore.RESET + " %s FAILED (result %s)" % (ip, mapCodeToString(r)))
 
 def main():
 	print(Fore.BLUE + '[i]' + Fore.RESET + ' Shodan-RPi %s\n    by btx3 (based on code by somu1795)' % version)
@@ -240,8 +251,6 @@ def main():
 	if args.paramiko_log:
 		# Start logging
 		paramiko.util.log_to_file(args.paramiko_log)
-	counter = 0
-	success = 0
 	if not fileCorrect():
 		shres = getShodanResults(key)
 	else:
@@ -260,10 +269,8 @@ def main():
 				print("[D] Init multiprocessing Pool() with %s threads" % args.t)
 			p = Pool(processes=args.t)
 			result = p.map(check_multi, targets)
-		if not args.indefinite:
-			print(('\n' + Fore.GREEN + '[+]' + Fore.RESET + ' Completed!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success)))
 	except KeyboardInterrupt:
-		print(('\n\n' + Fore.YELLOW + '[!]' + Fore.RESET + ' Interrupted!\n    Total IPs tried: %s\n    Total successes: %s\n' % (counter, success)))
+		print('\n\n' + Fore.YELLOW + '[!]' + Fore.RESET + ' Interrupted!\n')
 		sys.exit(0)
 
 if __name__ == "__main__":

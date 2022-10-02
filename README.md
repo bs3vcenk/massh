@@ -1,9 +1,9 @@
-# Shodan-RPi
+# massh
 
-This script can be used to quickly test out a SSH key or a credential pair on several hosts.
+This Python script can be used to quickly test out a SSH key or a credential pair on several hosts.
 
 ## Requirements
-Shodan-RPi uses the following modules:
+massh uses the following modules:
 * `paramiko` - for SSHing into remote hosts
 * `shodan` - for accessing the Shodan API
 * `colorama` - for colored output
@@ -14,7 +14,7 @@ Shodan-RPi uses the following modules:
 
 ## Usage
 ```
-usage: shodan_raspi.py [-h] (-i FILE | -k SHODAN_KEY) [-q QUERY] -u USERNAME
+usage: massh.py [-h] (-i FILE | -k SHODAN_KEY) [-q QUERY] -u USERNAME
                        (-p PASSWORD | --ssh-key SSH_KEY) [-c CMD] [-o FILE]
                        [-t THREADS] [--limit LIMIT] [--debug]
                        [--singlethreaded] [--paramiko-log FILE]
@@ -50,7 +50,7 @@ optional arguments:
 
 So, for example, scan Shodan for OpenSSH servers, and try to connect using the the username `root` and password `123456`
 ```
-./shodan_raspi.py -k SHODAN_KEY --query "OpenSSH" -u root -p 123456
+./massh.py -k SHODAN_KEY --query "OpenSSH" -u root -p 123456
 ```
 
 If you want to use a list of IPs, you can use the `-i` argument to specify a file containing the IPs and ports, one per line. The format is `IP:PORT`, for example:
@@ -61,5 +61,5 @@ If you want to use a list of IPs, you can use the `-i` argument to specify a fil
 
 Another useful option is to use the `--ssh-key` argument to specify a SSH key to use for authentication. This can be used to test if a key is valid on a list of hosts:
 ```
-./shodan_raspi.py -i hosts.txt -u root --ssh-key ~/.ssh/id_rsa
+./massh.py -i hosts.txt -u root --ssh-key ~/.ssh/id_rsa
 ```

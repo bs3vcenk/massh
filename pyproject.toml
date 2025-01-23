@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "massh"
+version = "3.0.0"
+description = "A mass SSH credential tester utility."
+readme = "README.md"
+authors = [
+    { name="btx3" }
+]
+license = {file = "LICENSE"}
+keywords = ["ssh", "brute force", "multithreading"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Security",
+    "Topic :: System :: Networking",
+    "Topic :: Utilities"
+]
+dependencies = [
+    "paramiko",
+    "requests"
+]
+
+[project.scripts]
+massh = "massh:main"

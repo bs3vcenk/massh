@@ -1,4 +1,2 @@
 paramiko
-shodan
-colorama
-tqdm
+requests

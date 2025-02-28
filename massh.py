@@ -49,7 +49,6 @@ def shodan_search(apikey: str, search_string: str, limit: int = 100):
 	"""
 	Poll Shodan for results using the given API key and search string.
 	"""
-	res = requests.get(f"https://api.shodan.io/shodan/host/search?key={apikey}&query={search_string}&limit={limit}").json()
 	try:
 		results = requests.get(f"https://api.shodan.io/shodan/host/search?key={apikey}&query={search_string}&limit={limit}").json()
 		return [f"{match['ip_str']}:{match['port']}" for match in results['matches']]

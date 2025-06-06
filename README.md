@@ -50,7 +50,7 @@ If you have a Shodan API key, you can use it to search for hosts:
 usage: massh [-h] (-f FILE | -k SHODAN_KEY) [-q QUERY] -u USERNAME (-p PASSWORD | -i SSH_KEY) [-c CMD] [-o FILE] [-t THREADS] [--limit LIMIT] [--debug]
              [--singlethreaded]
 
-massh (Mass-SSH): multithreaded ssh crendential tester
+massh (Mass-SSH): multithreaded ssh credential tester
 
 options:
   -h, --help            show this help message and exit
